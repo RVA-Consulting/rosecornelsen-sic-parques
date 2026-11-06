@@ -49,6 +49,13 @@ cp .env.example .env          # e preencha SECRET_KEY e SEED_SENHA
 Usuários de teste (senha = `SEED_SENHA` do `.env`): `ouvidoria@teste.local`, `gerente@teste.local`,
 `ana@teste.local`, `bruno@teste.local`, `carla@teste.local`.
 
+## Onde está publicado
+
+- Site: https://rosecornelsen-sic-parques.onrender.com (Render, workspace ARSESP, plano gratuito: a primeira visita depois de um tempo parado demora ~1 minuto)
+- Código: https://github.com/RVA-Consulting/rosecornelsen-sic-parques (público, sem senhas)
+- Banco: Neon, projeto "Rosemeire Duarte (lab16)", banco `sic_parques`
+- Cada envio para a branch `main` publica de novo automaticamente.
+
 ## Publicar no Render
 
 - Runtime **Python 3**; build `pip install -r requirements.txt`; start `gunicorn wsgi:app --bind 0.0.0.0:$PORT`.
