@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Reclassificar' if pedido else 'Registro na Ouvidoria' }}{% endblock %}
+{% block conteudo %}
+<div class="titulo">
+  <div>
+    <a class="voltar" href="{{ url_for('rotas.painel') }}">‹ Voltar ao painel</a>
+    {% if pedido %}
+    <h1>Reclassificar {{ pedido.protocolo }}</h1>
+    <p class="sub">O gerente devolveu este pedido por ser de outra área. Corrija a classificação e encaminhe de novo.</p>
+    {% else %}
+    <h1>Registrar SIC recebida no Fala.SP</h1>
+    <p class="sub">A Ouvidoria classifica o assunto e encaminha direto à gerência responsável, sem passar pela Superintendência.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+  <form class="card" method="post" style="flex: 999 1 420px; min-width: 0; gap: 16px">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <h2>Dados do pedido</h2>
+    <div class="campos">
+      <div class="campo">
+        <label for="r-prot">Protocolo Fala.SP</label>
+        <input id="r-prot" name="protocolo" type="text" value="{{ dados.protocolo or '' }}" placeholder="SIC 2026-000000" required {% if pedido %}readonly{% endif %}>
+      </div>
+      <div class="campo">
+        <label for="r-data">Data de registro no Fala.SP</label>
+        <input id="r-data" name="data_registro" type="date" value="{{ dados.data_registro.isoformat() if dados.data_registro else '' }}" required {% if pedido %}readonly{% endif %}>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="r-texto">Pedido do cidadão (copiado do Fala.SP)</label>
+      <textarea id="r-texto" name="texto" rows="5" required {% if pedido %}readonly{% endif %}>{{ dados.texto or '' }}</textarea>
+    </div>
+
+    <h2 style="margin-top: 8px">Classificação</h2>
+    <div class="campos">
+      <div class="campo">
+        <label for="r-area">Área responsável</label>
+        <select id="r-area" name="area">
+          {% for a in areas %}<option {% if a == dados.area %}selected{% endif %}>{{ a }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo">
+        <label for="r-assunto">Assunto</label>
+        <select id="r-assunto" name="assunto">
+          {% for a in assuntos %}<option {% if a == dados.assunto %}selected{% endif %}>{{ a }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="campo" id="bloco-parque">
+        <label for="r-parque">Parque</label>
+        <select id="r-parque" name="parque">
+          {% for p in parques %}<option {% if p == dados.parque %}selected{% endif %}>{{ p }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <fieldset id="bloco-seguro">
+      <legend>O assunto foi identificado com segurança?</legend>
+      <label class="opcao"><input type="radio" name="seguro" value="sim" {% if dados.seguro != 'nao' %}checked{% endif %}>Sim · vai direto para a fila do técnico do parque</label>
+      <label class="opcao"><input type="radio" name="seguro" value="nao" {% if dados.seguro == 'nao' %}checked{% endif %}>Não (novo ou sensível) · o gerente valida a classificação</label>
+    </fieldset>
+    <div class="acoes">
+      <a class="btn btn-s" href="{{ url_for('rotas.painel') }}">Cancelar</a>
+      <button class="btn btn-p" type="submit" id="r-enviar">Encaminhar à {{ dados.area }}</button>
+    </div>
+  </form>
+
+  <aside style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 16px">
+    <div class="card destaque" style="gap: 8px">
+      <span class="rot peq" style="font-weight: 700">Data-limite calculada (LAI)</span>
+      <span id="prazo" style="font-size: 28px; font-weight: 800; color: var(--azul)">—</span>
+      <span id="prorrogacao" style="font-size: 14px; color: var(--texto-2)">Informe a data de registro.</span>
+    </div>
+    <div class="card" style="gap: 8px">
+      <span class="peq" style="font-weight: 700">O que muda em relação a hoje</span>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; display: flex; flex-direction: column; gap: 6px">
+        <li>O e-mail para a Superintendência deixa de existir.</li>
+        <li>O prazo é registrado uma vez e aparece no painel.</li>
+        <li>O pedido já chega classificado por parque e assunto.</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Mostra a data-limite enquanto a Ouvidoria preenche (o servidor calcula de novo ao salvar)
+(function () {
+  const data = document.getElementById('r-data');
+  const area = document.getElementById('r-area');
+  const piloto = 'Gerência de Parques';
+  const fmt = d => d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  function somar(iso, dias) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + dias); return d; }
+  function atualizar() {
+    if (data.value) {
+      document.getElementById('prazo').textContent = fmt(somar(data.value, 20));
+      document.getElementById('prorrogacao').textContent =
+        '20 dias a partir do registro. Prorrogação possível até ' + fmt(somar(data.value, 30)) + ', com justificativa ao cidadão.';
+    }
+    const ehParques = area.value === piloto;
+    document.getElementById('bloco-parque').hidden = !ehParques;
+    document.getElementById('bloco-seguro').hidden = !ehParques;
+    document.getElementById('r-enviar').textContent = 'Encaminhar à ' + area.value;
+  }
+  data.addEventListener('input', atualizar);
+  area.addEventListener('change', atualizar);
+  atualizar();
+})();
+</script>
+{% endblock %}

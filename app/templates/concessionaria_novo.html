@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titulo %}Pedido à concessionária · {{ pedido.protocolo }}{% endblock %}
+{% block conteudo %}
+{% with titulo_etapa = 'Pedido à concessionária', voltar_url = url_for('rotas.analise', pedido_id=pedido.id), voltar_rotulo = 'Voltar à análise' %}{% include "_cabecalho_pedido.html" %}{% endwith %}
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+  <form class="card" method="post" style="flex: 999 1 420px; min-width: 0; gap: 16px">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <input type="hidden" name="observacao" value="{{ observacao }}">
+    <p class="sub">O pedido sai de um modelo, com prazo de resposta controlado pelo sistema.</p>
+    <div class="campos">
+      <div class="campo">
+        <label for="c-dest">Destinatário</label>
+        <input id="c-dest" type="text" value="{{ destinatario }}" readonly>
+      </div>
+      <div class="campo">
+        <label for="c-prazo">Prazo para resposta</label>
+        <select id="c-prazo" name="prazo_dias">
+          {% for dias, ate in opcoes %}
+          <option value="{{ dias }}" data-data="{{ ate | data }}" {% if request.form.get('prazo_dias') == dias|string %}selected{% endif %}>{{ dias }} dias úteis · até {{ ate | dia_mes }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="campo">
+      <label for="c-texto">Texto do pedido (modelo “informação para SIC”)</label>
+      <textarea id="c-texto" name="texto" rows="10" required>{{ texto }}</textarea>
+      <span class="peq">Troque o trecho entre colchetes pelo que você precisa. O sistema não envia e-mail: copie o texto e envie pelo canal oficial.</span>
+    </div>
+    <div class="acoes">
+      <a class="btn btn-s" href="{{ url_for('rotas.analise', pedido_id=pedido.id) }}">Cancelar</a>
+      <button class="btn btn-s" type="button" id="copiar">Copiar texto</button>
+      <button class="btn btn-p" type="submit">Registrar envio</button>
+    </div>
+  </form>
+
+  <aside style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 16px">
+    <div class="card">
+      <h2 style="font-size: 16px">Depois de registrar</h2>
+      <ul style="margin: 0; padding-left: 18px; font-size: 14px; display: flex; flex-direction: column; gap: 6px">
+        <li>O pedido aparece no painel como “Aguardando concessionária”.</li>
+        <li>Quando faltar 1 dia para o prazo, ele é destacado.</li>
+        <li>Quando a resposta chegar, você registra aqui e segue para a minuta.</li>
+      </ul>
+    </div>
+    <div class="card atencao" style="gap: 8px">
+      <span class="etiqueta prazo-alerta" style="align-self: flex-start; font-size: 12px">Se o prazo vencer</span>
+      <span style="font-size: 14px; line-height: 1.5">O pedido fica em vermelho para o técnico e o gerente cobrarem a concessionária e avaliarem a prorrogação da LAI (mais 10 dias, com justificativa ao cidadão).</span>
+    </div>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const prazo = document.getElementById('c-prazo');
+  const texto = document.getElementById('c-texto');
+  let atual = prazo.selectedOptions[0].dataset.data;
+  // Ao trocar o prazo, atualiza a data que aparece no texto
+  prazo.addEventListener('change', function () {
+    const nova = prazo.selectedOptions[0].dataset.data;
+    texto.value = texto.value.split(atual).join(nova);
+    atual = nova;
+  });
+  document.getElementById('copiar').addEventListener('click', async function () {
+    try { await navigator.clipboard.writeText(texto.value); this.textContent = 'Texto copiado'; }
+    catch (e) { texto.select(); this.textContent = 'Use Ctrl+C'; }
+  });
+})();
+</script>
+{% endblock %}

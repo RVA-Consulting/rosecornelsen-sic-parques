@@ -1,0 +1,15 @@
+{# Prorrogação do prazo da LAI: aparece quando faltam poucos dias (ou a concessionária atrasou) e ainda não houve prorrogação #}
+{% if not pedido.prorrogado and pedido.dias_restantes >= 0 and (pedido.situacao == 'alerta' or forcar_prorrogacao) %}
+<details class="card atencao" {% if forcar_prorrogacao %}open{% endif %}>
+  <summary style="font-weight: 800; cursor: pointer; min-height: 32px">Prorrogar o prazo da LAI (+{{ prorrogacao_dias | default(10) }} dias)</summary>
+  <form method="post" action="{{ url_for('rotas.prorrogar', pedido_id=pedido.id) }}" style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <p style="font-size: 14px">A LAI permite uma prorrogação, feita antes do vencimento e com justificativa ao cidadão. Registre aqui e informe o cidadão no Fala.SP.</p>
+    <div class="campo">
+      <label for="just">Justificativa</label>
+      <textarea id="just" name="justificativa" rows="3" required></textarea>
+    </div>
+    <div class="acoes"><button class="btn btn-s" type="submit">Prorrogar prazo</button></div>
+  </form>
+</details>
+{% endif %}

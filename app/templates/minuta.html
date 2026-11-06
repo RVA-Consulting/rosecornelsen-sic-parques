@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block titulo %}Minuta · {{ pedido.protocolo }}{% endblock %}
+{% block conteudo %}
+{% with titulo_etapa = 'Minuta da resposta' %}{% include "_cabecalho_pedido.html" %}{% endwith %}
+
+{% if m.motivo_devolucao %}
+<section class="card atencao" role="alert">
+  <span class="etiqueta prazo-alerta" style="align-self: flex-start; font-size: 12px">Devolvida pelo gerente</span>
+  <p style="font-size: 15px">{{ m.motivo_devolucao }}</p>
+</section>
+{% endif %}
+
+<details class="card">
+  <summary style="font-weight: 800; cursor: pointer; min-height: 32px">Pedido do cidadão{% if respostas_concessionaria %} e informações da concessionária{% endif %}</summary>
+  <p style="font-size: 15px; line-height: 1.55">{{ pedido.texto }}</p>
+  {% for pc in respostas_concessionaria %}
+  <div class="doc">
+    <span class="kind">Concessionária · recebido em {{ pc.respondido_em | data }}</span>
+    <span style="font-size: 15px; white-space: pre-line">{{ pc.resposta }}</span>
+  </div>
+  {% endfor %}
+  <p class="peq"><a href="{{ url_for('rotas.base') }}">Consultar a base de conhecimento</a></p>
+</details>
+
+<form method="post" style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+  <input type="hidden" name="csrf" value="{{ csrf() }}">
+  <section class="card" style="flex: 999 1 420px; min-width: 0; gap: 16px">
+    <div class="campo">
+      <label for="m-modelo">Modelo</label>
+      <select id="m-modelo" name="modelo">
+        {% for nome in modelos %}<option {% if nome == m.modelo %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="campo">
+      <label for="m-texto">Texto da resposta ao cidadão</label>
+      <textarea id="m-texto" name="texto" rows="14">{{ m.texto }}</textarea>
+      <span class="peq">Troque os trechos entre colchetes. Trocar o modelo substitui o texto.</span>
+    </div>
+    <div class="card" style="background: var(--fundo); gap: 8px; padding: 16px">
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+        <strong>Sugestão de texto por IA</strong>
+        <span class="etiqueta" style="background: var(--linha); color: var(--texto-2); font-size: 12px">Desligada</span>
+      </div>
+      <p class="peq">Só será ligada após o parecer da TI sobre integração e a avaliação de proteção de dados (LGPD). Mesmo ligada, o técnico revisa e assina o texto.</p>
+      <button class="btn btn-s" type="button" disabled style="align-self: flex-start; opacity: .55; cursor: not-allowed">Gerar sugestão</button>
+    </div>
+  </section>
+
+  <aside style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 16px">
+    <fieldset class="card" style="gap: 8px">
+      <legend style="font-size: 16px; font-weight: 800; color: var(--texto); padding: 0 4px">Checklist antes de enviar</legend>
+      {% for chave, rotulo in checklist.items() %}
+      <label class="opcao" style="align-items: flex-start; font-size: 14px"><input type="checkbox" name="checklist" value="{{ chave }}" {% if chave in m.checklist %}checked{% endif %}>{{ rotulo }}</label>
+      {% endfor %}
+    </fieldset>
+    <div class="card destaque" style="gap: 10px">
+      <h2 style="font-size: 16px">É resposta-padrão?</h2>
+      <p class="peq">Resposta-padrão (modelo já validado e checklist completo) fica na alçada do técnico e segue direto para envio. Resposta nova ou sensível vai para aprovação do gerente.</p>
+      <button class="btn btn-p" type="submit" name="acao" value="aprovacao">Enviar para aprovação</button>
+      <button class="btn btn-s" type="submit" name="acao" value="padrao">Resposta-padrão: ir para envio</button>
+      <button class="btn-link" type="submit" name="acao" value="salvar" style="align-self: flex-start">Salvar rascunho</button>
+    </div>
+  </aside>
+</form>
+{% include "_prorrogar.html" %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const modelos = {{ modelos | tojson }};
+  const sel = document.getElementById('m-modelo');
+  const texto = document.getElementById('m-texto');
+  let anterior = sel.value;
+  sel.addEventListener('change', function () {
+    const mudou = texto.value.trim() && texto.value !== modelos[anterior];
+    if (mudou && !confirm('Trocar o modelo substitui o texto que você escreveu. Continuar?')) {
+      sel.value = anterior;
+      return;
+    }
+    texto.value = modelos[sel.value];
+    anterior = sel.value;
+  });
+})();
+</script>
+{% endblock %}

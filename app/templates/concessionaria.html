@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block titulo %}Concessionária · {{ pedido.protocolo }}{% endblock %}
+{% block conteudo %}
+{% with titulo_etapa = 'Aguardando concessionária' %}{% include "_cabecalho_pedido.html" %}{% endwith %}
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+  <div style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+    {% if pc.situacao == 'vencido' %}
+    <section class="card atencao">
+      <span class="etiqueta prazo-vencido" style="align-self: flex-start; font-size: 12px">Prazo da concessionária vencido</span>
+      <h2>Cobrar a concessionária</h2>
+      <p style="font-size: 15px">O prazo terminou em {{ pc.prazo | data }}{% if pc.cobrancas %} e ela já foi cobrada {{ pc.cobrancas }} {{ 'vez' if pc.cobrancas == 1 else 'vezes' }}{% endif %}. Cobre pelo canal oficial e registre o novo prazo.</p>
+      <form method="post" action="{{ url_for('rotas.cobrar_concessionaria', pedido_id=pedido.id) }}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+        <input type="hidden" name="csrf" value="{{ csrf() }}">
+        <div class="campo" style="flex: 1 1 220px">
+          <label for="novo-prazo">Novo prazo</label>
+          <select id="novo-prazo" name="prazo_dias">
+            {% for dias, ate in prazos_cobranca %}<option value="{{ dias }}">{{ dias }} dias úteis · até {{ ate | dia_mes }}</option>{% endfor %}
+          </select>
+        </div>
+        <button class="btn btn-p" type="submit">Registrar cobrança</button>
+      </form>
+    </section>
+    {% set forcar_prorrogacao = true %}
+    {% include "_prorrogar.html" %}
+    {% endif %}
+
+    <form class="card destaque" method="post" action="{{ url_for('rotas.resposta_concessionaria', pedido_id=pedido.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <h2>Registrar a resposta da concessionária</h2>
+      <div class="campos">
+        <div class="campo">
+          <label for="recebido">Recebida em</label>
+          <input id="recebido" name="recebido_em" type="date" value="{{ hoje.isoformat() }}" min="{{ pc.enviado_em.isoformat() }}" max="{{ hoje.isoformat() }}" required>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="resposta">O que a concessionária informou</label>
+        <textarea id="resposta" name="resposta" rows="5" required placeholder="Resumo das informações recebidas e nome dos arquivos enviados"></textarea>
+        <span class="peq">Os anexos continuam no canal oficial; aqui fica o resumo para a minuta.</span>
+      </div>
+      <div class="acoes"><button class="btn btn-p" type="submit">Registrar e seguir para a minuta</button></div>
+    </form>
+
+    {% if pc.situacao != 'vencido' %}{% include "_prorrogar.html" %}{% endif %}
+
+    <section class="card">
+      <h2>Pedido enviado</h2>
+      <p class="peq">{{ pc.destinatario }} · enviado em {{ pc.enviado_em | data }}</p>
+      <p style="font-size: 15px; line-height: 1.5; white-space: pre-line">{{ pc.texto }}</p>
+    </section>
+  </div>
+
+  <aside style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 16px">
+    <div class="card">
+      <h2 style="font-size: 16px">Acompanhamento</h2>
+      <div class="passo"><span class="ponto feito"></span><div><strong>Pedido enviado</strong><span class="peq">{{ pc.enviado_em | data }}</span></div></div>
+      {% if pc.cobrancas %}
+      <div class="passo"><span class="ponto feito"></span><div><strong>Cobrada {{ pc.cobrancas }} {{ 'vez' if pc.cobrancas == 1 else 'vezes' }}</strong><span class="peq">novo prazo {{ pc.prazo | data }}</span></div></div>
+      {% endif %}
+      <div class="passo">
+        <span class="ponto {{ 'vencido' if pc.situacao == 'vencido' else '' }}"></span>
+        <div><strong>Prazo da concessionária</strong>
+          <span class="peq">{{ pc.prazo | data }} ·
+            {% if pc.situacao == 'vencido' %}vencido há {{ -pc.dias_restantes }} {{ 'dia' if pc.dias_restantes == -1 else 'dias' }}
+            {% elif pc.dias_restantes == 0 %}vence hoje{% else %}faltam {{ pc.dias_restantes }} {{ 'dia' if pc.dias_restantes == 1 else 'dias' }}{% endif %}</span>
+        </div>
+      </div>
+      <div class="passo"><span class="ponto"></span><div><strong>Resposta recebida</strong><span class="peq">registrada nesta tela</span></div></div>
+    </div>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block titulo %}Envio · {{ pedido.protocolo }}{% endblock %}
+{% block conteudo %}
+{% with titulo_etapa = 'Enviar resposta' %}{% include "_cabecalho_pedido.html" %}{% endwith %}
+<p class="sub">
+  {% if m.resposta_padrao %}Resposta-padrão ({{ m.modelo }}) preparada por {{ m.autor.nome if m.autor else '—' }} em {{ m.enviada_em | data }}.
+  {% else %}Aprovada por {{ m.aprovada_por.nome if m.aprovada_por else 'gerente' }} em {{ m.aprovada_em | data }}.{% endif %}
+  Falta inserir a resposta no Fala.SP e baixar o prazo.
+</p>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+  <form class="card" method="post" style="flex: 999 1 420px; min-width: 0; gap: 18px">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <h2>Três passos para concluir</h2>
+    <div class="passo"><span class="num">1</span>
+      <div style="flex: 1; min-width: 0; gap: 8px">
+        <strong>Copiar o texto aprovado</strong>
+        <textarea id="texto" rows="10" readonly style="font: inherit; font-size: 14px; padding: 10px 12px; border: 1px solid var(--borda); border-radius: 8px; background: var(--fundo); width: 100%">{{ m.texto }}</textarea>
+        <button class="btn btn-s" type="button" id="copiar" style="align-self: flex-start">Copiar resposta</button>
+      </div>
+    </div>
+    <div class="passo"><span class="num">2</span>
+      <div><strong>Colar no protocolo {{ pedido.protocolo }} do Fala.SP{% if pedido.pedidos_concessionaria %} e anexar os arquivos da concessionária{% endif %}</strong>
+        <span class="peq">Este passo continua manual: a integração automática com o Fala.SP não faz parte da proposta e depende de avaliação da TI.</span></div>
+    </div>
+    <div class="passo"><span class="num">3</span>
+      <div style="gap: 10px">
+        <label class="opcao"><input type="checkbox" name="confirmo" value="1" required>Confirmo que a resposta foi registrada no Fala.SP</label>
+        <label class="opcao" style="font-size: 14px"><input type="checkbox" name="incluir_base" value="1" checked>Guardar esta resposta na base de conhecimento, como modelo</label>
+        <button class="btn btn-p" type="submit" style="align-self: flex-start">Baixar o prazo e encerrar</button>
+      </div>
+    </div>
+  </form>
+
+  <aside class="card" style="flex: 1 1 280px">
+    <h2 style="font-size: 16px">Histórico do pedido</h2>
+    <ol class="historico">
+      {% for e in pedido.eventos %}
+      <li><time datetime="{{ e.data_hora.isoformat() }}">{{ e.data_hora.strftime('%d/%m') }}</time><span>{{ e.descricao }}</span></li>
+      {% endfor %}
+    </ol>
+    <p class="peq">Cada etapa fica registrada com data e responsável. É desse histórico que sai o tempo por pedido.</p>
+  </aside>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('copiar').addEventListener('click', async function () {
+  const texto = document.getElementById('texto');
+  try { await navigator.clipboard.writeText(texto.value); this.textContent = 'Texto copiado'; }
+  catch (e) { texto.select(); this.textContent = 'Use Ctrl+C'; }
+});
+</script>
+{% endblock %}

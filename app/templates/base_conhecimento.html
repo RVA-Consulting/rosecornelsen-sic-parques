@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}Base de conhecimento{% endblock %}
+{% block conteudo %}
+<div class="titulo">
+  <div>
+    <h1>Base de conhecimento</h1>
+    <p class="sub">Contratos, normativos da Arsesp e do poder concedente e respostas já aprovadas, num lugar só.</p>
+  </div>
+  <a class="btn btn-p" href="{{ url_for('rotas.novo_documento') }}">+ Incluir documento</a>
+</div>
+
+<section class="card">
+  <form method="get" style="display: flex; gap: 8px; flex-wrap: wrap">
+    <label for="busca" class="visualmente-oculto">Buscar na base</label>
+    <input id="busca" name="q" type="search" value="{{ termo }}" placeholder="Ex.: tarifas estacionamento" class="busca" style="flex: 1 1 280px">
+    <button class="btn btn-s" type="submit">Buscar</button>
+    {% if termo %}<a class="btn btn-s" href="{{ url_for('rotas.base') }}">Limpar</a>{% endif %}
+  </form>
+  <p class="peq">{{ documentos | length }} {{ 'documento' if documentos | length == 1 else 'documentos' }}{% if termo %} para “{{ termo }}”{% endif %}</p>
+  <div class="docs">
+    {% for d in documentos %}
+    <div class="doc">
+      <span class="kind">{{ d.tipo }}{% if d.parque %} · {{ d.parque }}{% endif %}</span>
+      <span style="font-weight: 700">{{ d.titulo }}</span>
+      <span style="font-size: 14px; color: var(--texto-2)">{{ d.resumo }}</span>
+      <a href="{{ url_for('rotas.documento', doc_id=d.id, voltar=request.full_path) }}" style="font-size: 14px; font-weight: 700">Abrir</a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

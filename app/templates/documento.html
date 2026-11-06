@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titulo %}{{ doc.titulo }}{% endblock %}
+{% block conteudo %}
+<div class="titulo">
+  <div>
+    <a class="voltar" href="{{ voltar }}">‹ Voltar</a>
+    <h1>{{ doc.titulo }}</h1>
+    <p class="sub">{{ doc.tipo }} · {{ doc.parque or 'Todos os parques' }}</p>
+  </div>
+</div>
+<section class="card">
+  <p style="font-weight: 700">{{ doc.resumo }}</p>
+  <p style="font-size: 15px; line-height: 1.6; white-space: pre-line">{{ doc.conteudo }}</p>
+  <p class="peq">Incluído em {{ doc.cadastrado_em | data }}{% if doc.cadastrado_por %} por {{ doc.cadastrado_por.nome }}{% endif %}.</p>
+</section>
+{% endblock %}

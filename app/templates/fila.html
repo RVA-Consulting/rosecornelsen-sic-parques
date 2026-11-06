@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block titulo %}Fila da Gerência{% endblock %}
+{% block conteudo %}
+<div class="titulo">
+  <div>
+    <a class="voltar" href="{{ url_for('rotas.painel') }}">‹ Voltar ao painel</a>
+    <h1>Fila da Gerência de Parques</h1>
+    <p class="sub">Pedidos que chegaram da Ouvidoria. O gerente valida o assunto quando necessário e distribui ao técnico do parque.</p>
+  </div>
+</div>
+
+{% for p in a_validar %}
+<section class="card atencao">
+  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+    <span class="etiqueta prazo-alerta" style="font-size: 12px">Validar classificação</span>
+    <h2>{{ p.protocolo }} · assunto novo ou sensível</h2>
+  </div>
+  <p style="font-size: 15px; line-height: 1.5">“{{ p.texto }}”</p>
+  <p class="peq">Prazo {{ p.prazo | dia_mes }} ({{ p.dias_restantes }} dias) · <a href="{{ url_for('rotas.pedido', pedido_id=p.id) }}">ver histórico</a></p>
+  <form method="post" action="{{ url_for('rotas.validar', pedido_id=p.id) }}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+    <input type="hidden" name="csrf" value="{{ csrf() }}">
+    <div class="campo" style="flex: 1 1 220px">
+      <label for="v-assunto-{{ p.id }}">Assunto confirmado</label>
+      <select id="v-assunto-{{ p.id }}" name="assunto">
+        {% for a in assuntos %}<option {% if a == p.assunto %}selected{% endif %}>{{ a }}</option>{% endfor %}
+        <option>{{ devolver }}</option>
+      </select>
+    </div>
+    <div class="campo" style="flex: 1 1 180px">
+      <label for="v-parque-{{ p.id }}">Parque</label>
+      <select id="v-parque-{{ p.id }}" name="parque">
+        {% for pq in parques %}<option {% if pq == p.parque %}selected{% endif %}>{{ pq }}</option>{% endfor %}
+      </select>
+    </div>
+    <button class="btn btn-s" type="submit">Confirmar classificação</button>
+  </form>
+</section>
+{% endfor %}
+
+<section class="card" style="padding: 0; gap: 0">
+  <h2 style="padding: 16px 20px">A distribuir</h2>
+  {% for p in a_distribuir %}
+  <div class="linha-fila">
+    <div class="info">
+      <a href="{{ url_for('rotas.pedido', pedido_id=p.id) }}" style="font-weight: 800">{{ p.protocolo }} · {{ p.parque }}</a>
+      <span style="font-size: 14px; color: var(--texto-2)">{{ p.assunto }} · prazo {{ p.prazo | dia_mes }} ({{ p.dias_restantes }} dias)</span>
+    </div>
+    <form method="post" action="{{ url_for('rotas.distribuir', pedido_id=p.id) }}">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <label class="rotulo" for="d-{{ p.id }}">Técnico</label>
+      <select id="d-{{ p.id }}" name="tecnico" class="sel">
+        {# O técnico de referência do parque vem primeiro e já selecionado #}
+        {% for c in carga if c.tecnico.parque_referencia == p.parque %}
+        <option value="{{ c.tecnico.id }}" selected>{{ c.tecnico.nome }} · referência {{ p.parque }} ({{ c.total }} em curso)</option>
+        {% endfor %}
+        {% for c in carga if c.tecnico.parque_referencia != p.parque %}
+        <option value="{{ c.tecnico.id }}">{{ c.tecnico.nome }} ({{ c.total }} em curso)</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-p" type="submit">Distribuir</button>
+    </form>
+  </div>
+  {% else %}
+  <p class="peq" style="padding: 0 20px 16px">Nenhum pedido aguardando distribuição.</p>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h2>Carga da equipe</h2>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px">
+    {% for c in carga %}
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 14px; font-weight: 700">{{ c.tecnico.nome }}</span>
+      <div class="barra" role="img" aria-label="{{ c.total }} pedidos em curso"><div style="width: {{ c.percentual }}%"></div></div>
+      <span class="peq">
+        {{ c.total }} {{ 'pedido' if c.total == 1 else 'pedidos' }}
+        {% if c.mais_urgente and c.mais_urgente.situacao == 'vencido' %} · 1 com prazo vencido
+        {% elif c.mais_urgente and c.mais_urgente.situacao == 'alerta' %} · 1 vence em {{ c.mais_urgente.dias_restantes }} dias{% endif %}
+        {% if c.na_concessionaria %} · {{ c.na_concessionaria }} aguardando concessionária{% endif %}
+      </span>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

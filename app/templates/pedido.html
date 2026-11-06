@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block titulo %}{{ pedido.protocolo }}{% endblock %}
+{% block conteudo %}
+<div class="titulo">
+  <div>
+    <a class="voltar" href="{{ url_for('rotas.painel') }}">‹ Voltar ao painel</a>
+    <h1>{{ pedido.protocolo }}</h1>
+    <p class="sub">{{ pedido.parque or pedido.area }} · {{ pedido.assunto }} · responsável: {{ pedido.responsavel_rotulo }}</p>
+  </div>
+  <span class="etiqueta prazo-{{ pedido.situacao }}" style="font-size: 14px; padding: 8px 14px">Prazo {{ pedido.prazo | data }} · {{ pedido.dias_restantes }} dias</span>
+</div>
+
+<section class="card">
+  <h2>Pedido do cidadão</h2>
+  <p style="font-size: 16px; line-height: 1.55">{{ pedido.texto }}</p>
+  <p class="peq">Registrado no Fala.SP em {{ pedido.data_registro | data }} · os dados pessoais do requerente ficam só no Fala.SP.</p>
+</section>
+
+<section class="card destaque">
+  <h2>Etapa atual: {{ pedido.etapa_numero }} · {{ pedido.etapa_rotulo }}</h2>
+  {% if pedido.etapa == 'concluido' and pedido.minuta %}
+  <p class="peq">Resposta registrada no Fala.SP em {{ pedido.minuta.registrada_falasp_em | data }}.</p>
+  <div class="doc">
+    <span class="kind">Resposta enviada ao cidadão</span>
+    <span style="font-size: 15px; white-space: pre-line">{{ pedido.minuta.texto }}</span>
+  </div>
+  {% endif %}
+  {% for pc in pedido.pedidos_concessionaria if pc.respondido_em %}
+  <div class="doc">
+    <span class="kind">Resposta da concessionária · {{ pc.respondido_em | data }}</span>
+    <span style="font-size: 15px; white-space: pre-line">{{ pc.resposta }}</span>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="card">
+  <h2>Histórico do pedido</h2>
+  <ol class="historico">
+    {% for e in pedido.eventos %}
+    <li><time datetime="{{ e.data_hora.isoformat() }}">{{ e.data_hora.strftime('%d/%m %H:%M') }}</time><span>{{ e.descricao }}{% if e.usuario %} <span class="peq">· {{ e.usuario.nome }}</span>{% endif %}</span></li>
+    {% endfor %}
+  </ol>
+  <p class="peq">Cada etapa fica registrada com data e responsável. É desse histórico que sai o tempo por pedido.</p>
+</section>
+{% endblock %}

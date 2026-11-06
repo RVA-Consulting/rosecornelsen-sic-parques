@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block titulo %}Painel de prazos{% endblock %}
+{% block conteudo %}
+<div class="titulo">
+  <div>
+    <h1>Painel de prazos</h1>
+    <p class="sub">Todos os pedidos em andamento, com a data-limite da LAI (20 dias, prorrogáveis por mais 10).</p>
+  </div>
+  {% if current_user.perfil == 'ouvidoria' %}
+  <a class="btn btn-p" href="{{ url_for('rotas.registrar') }}">+ Registrar nova SIC</a>
+  {% endif %}
+</div>
+
+<div class="resumo">
+  <div class="card">
+    <span class="rot">Em andamento</span>
+    <span class="valor">{{ resumo.andamento }}</span>
+    <span class="peq">{{ resumo.parques }} em Parques</span>
+  </div>
+  <div class="card {% if resumo.alerta %}atencao{% endif %}">
+    <span class="rot">Vencem em até {{ alerta_dias }} dias</span>
+    <span class="valor">{{ resumo.alerta }}</span>
+    <span class="peq">{{ 'Atenção aos prazos' if resumo.alerta else 'Nenhum pedido perto do prazo' }}</span>
+  </div>
+  <div class="card">
+    <span class="rot">Vencidos</span>
+    <span class="valor">{{ resumo.vencidos }}</span>
+    <span class="peq">entre os em andamento</span>
+  </div>
+  <div class="card">
+    <span class="rot">Aguardando concessionária</span>
+    <span class="valor">{{ resumo.concessionaria }}</span>
+    <span class="peq">{% if resumo.concessionaria_vencidos %}{{ resumo.concessionaria_vencidos }} com prazo vencido{% else %}nenhum com prazo vencido{% endif %}</span>
+  </div>
+</div>
+
+<section class="card" style="padding: 0; gap: 12px">
+  <form method="get" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 20px 0">
+    <h2>Pedidos em andamento</h2>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+      <label class="rotulo" for="f-area">Área</label>
+      <select id="f-area" name="area" class="sel" onchange="this.form.submit()">
+        {% if current_user.perfil == 'tecnico' %}<option value="meus" {% if filtro == 'meus' %}selected{% endif %}>Meus pedidos</option>{% endif %}
+        <option value="parques" {% if filtro == 'parques' %}selected{% endif %}>Gerência de Parques</option>
+        <option value="todas" {% if filtro == 'todas' %}selected{% endif %}>Todas as áreas</option>
+      </select>
+      <noscript><button class="btn btn-s" type="submit">Filtrar</button></noscript>
+    </div>
+  </form>
+  <div class="tabela">
+    <table>
+      <thead>
+        <tr><th>Protocolo</th><th>Assunto</th><th>Parque</th><th>Etapa</th><th>Responsável</th><th>Prazo LAI</th></tr>
+      </thead>
+      <tbody>
+        {% for p in pedidos %}
+        <tr>
+          <td><a href="{{ link_do_pedido(p) }}">{{ p.protocolo }}</a></td>
+          <td>{{ 'A classificar' if p.etapa == 'validar' else p.assunto }}</td>
+          <td>{{ p.parque or '—' }}</td>
+          <td>
+            {{ p.etapa_numero }} · {{ p.etapa_rotulo }}
+            {% set pc = p.pedido_concessionaria_aberto if p.etapa == 'concessionaria' else none %}
+            {% if pc and pc.situacao == 'vencido' %}<span class="sub-etapa vencido">Concessionária atrasada</span>
+            {% elif pc and pc.dias_restantes <= 1 %}<span class="sub-etapa alerta">Concessionária: prazo {{ 'hoje' if pc.dias_restantes == 0 else 'amanhã' }}</span>{% endif %}
+          </td>
+          <td>{{ p.responsavel_rotulo }}</td>
+          <td>
+            <span class="etiqueta prazo-{{ p.situacao }}">
+              {% if p.situacao == 'vencido' %}vencido há {{ -p.dias_restantes }} {{ 'dia' if p.dias_restantes == -1 else 'dias' }}
+              {% elif p.dias_restantes == 0 %}vence hoje
+              {% else %}{{ p.dias_restantes }} {{ 'dia' if p.dias_restantes == 1 else 'dias' }}{% endif %}
+              · {{ p.prazo | dia_mes }}
+            </span>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">{{ 'Nenhum pedido com você agora.' if filtro == 'meus' else 'Nenhum pedido em andamento.' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="peq" style="padding: 0 20px 16px">Cores do prazo: laranja = vence em até {{ alerta_dias }} dias; verde = no prazo; vermelho = vencido.</p>
+</section>
+{% endblock %}

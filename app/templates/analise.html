@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block titulo %}Análise · {{ pedido.protocolo }}{% endblock %}
+{% block conteudo %}
+{% with titulo_etapa = 'Análise' %}{% include "_cabecalho_pedido.html" %}{% endwith %}
+
+<section class="card">
+  <h2>Pedido do cidadão</h2>
+  <p style="font-size: 16px; line-height: 1.55">{{ pedido.texto }}</p>
+  <p class="peq">Registrado no Fala.SP em {{ pedido.data_registro | data }} · os dados pessoais do requerente ficam só no Fala.SP.</p>
+</section>
+
+<section class="card">
+  <form method="get" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+    <h2>Base de conhecimento{% if termo %} · resultados para “{{ termo }}”{% else %} · {{ pedido.parque }} e normas gerais{% endif %}</h2>
+    <div style="display: flex; gap: 8px; flex: 0 1 380px; min-width: 0">
+      <label for="busca" class="visualmente-oculto">Buscar na base</label>
+      <input id="busca" name="q" type="search" value="{{ termo }}" placeholder="Ex.: cronograma de obras" class="busca">
+      <button class="btn btn-s" type="submit">Buscar</button>
+    </div>
+  </form>
+  {% if documentos %}
+  <div class="docs">
+    {% for d in documentos %}
+    <div class="doc">
+      <span class="kind">{{ d.tipo }}{% if d.parque %} · {{ d.parque }}{% endif %}</span>
+      <span style="font-weight: 700">{{ d.titulo }}</span>
+      <span style="font-size: 14px; color: var(--texto-2)">{{ d.resumo }}</span>
+      <a href="{{ url_for('rotas.documento', doc_id=d.id, voltar=request.full_path) }}" style="font-size: 14px; font-weight: 700">{{ 'Ver resposta' if d.tipo == 'Resposta anterior' else 'Abrir trecho' }}</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="peq">Nada encontrado. Tente outras palavras ou <a href="{{ url_for('rotas.novo_documento') }}">inclua um documento na base</a>.</p>
+  {% endif %}
+  <p class="peq">Repositório único: contratos, normativos da Arsesp e do poder concedente e respostas já aprovadas. <a href="{{ url_for('rotas.base') }}">Ver a base inteira</a></p>
+</section>
+
+<form class="card destaque" method="post" action="{{ url_for('rotas.concluir_analise', pedido_id=pedido.id) }}">
+  <input type="hidden" name="csrf" value="{{ csrf() }}">
+  <h2>Precisa de informações da concessionária?</h2>
+  <p style="font-size: 15px; color: var(--texto-2)">
+    Precisa quando a informação pedida está só com a concessionária (andamento de obras, dados de operação, documentos internos dela).
+    {% if indicador[1] %}Até agora, {{ indicador[0] }} de {{ indicador[1] }} pedidos analisados precisaram.{% endif %}
+  </p>
+  <div class="campo">
+    <label for="obs">Observação da análise (opcional, fica no histórico)</label>
+    <input id="obs" name="observacao" type="text" placeholder="Ex.: cronograma atualizado só a concessionária tem">
+  </div>
+  <div style="display: flex; flex-wrap: wrap; gap: 12px">
+    <button class="btn btn-p" type="submit" name="precisa" value="sim">Sim · preparar pedido padrão</button>
+    <button class="btn btn-s" type="submit" name="precisa" value="nao">Não · seguir para a minuta</button>
+  </div>
+</form>
+
+{% include "_prorrogar.html" %}
+{% endblock %}

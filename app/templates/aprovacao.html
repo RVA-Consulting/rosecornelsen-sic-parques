@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}Aprovação · {{ pedido.protocolo }}{% endblock %}
+{% block conteudo %}
+{% with titulo_etapa = 'Revisar e aprovar' %}{% include "_cabecalho_pedido.html" %}{% endwith %}
+<p class="sub">Minuta de {{ m.autor.nome if m.autor else '—' }} · enviada para aprovação em {{ m.enviada_em | data }}{% if m.devolucoes %} · já devolvida {{ m.devolucoes }} {{ 'vez' if m.devolucoes == 1 else 'vezes' }}{% endif %}.</p>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+  <div style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+    <section class="card">
+      <h2>Minuta</h2>
+      <p style="font-size: 15px; line-height: 1.6; white-space: pre-line">{{ m.texto }}</p>
+    </section>
+    <details class="card">
+      <summary style="font-weight: 800; cursor: pointer; min-height: 32px">Pedido do cidadão{% if respostas_concessionaria %} e informações da concessionária{% endif %}</summary>
+      <p style="font-size: 15px; line-height: 1.55">{{ pedido.texto }}</p>
+      {% for pc in respostas_concessionaria %}
+      <div class="doc"><span class="kind">Concessionária · {{ pc.respondido_em | data }}</span><span style="white-space: pre-line">{{ pc.resposta }}</span></div>
+      {% endfor %}
+    </details>
+  </div>
+
+  <aside style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 16px">
+    <div class="card" style="gap: 8px">
+      <h2 style="font-size: 16px">Checklist do técnico</h2>
+      <ul class="checklist">
+        {% for chave, rotulo in checklist.items() %}
+        {% if chave in m.checklist %}
+        <li class="ok"><span aria-hidden="true">✓</span>{{ rotulo }}</li>
+        {% else %}
+        <li class="pendente"><span aria-hidden="true">!</span><span><strong>Pendente:</strong> {{ rotulo | lower }}</span></li>
+        {% endif %}
+        {% endfor %}
+      </ul>
+    </div>
+    <form class="card destaque" method="post" style="gap: 12px">
+      <input type="hidden" name="csrf" value="{{ csrf() }}">
+      <h2 style="font-size: 16px">Decisão</h2>
+      <button class="btn btn-p" type="submit" name="decisao" value="aprovar">Aprovar resposta</button>
+      <div class="campo">
+        <label for="motivo">Motivo da devolução (obrigatório para devolver)</label>
+        <textarea id="motivo" name="motivo" rows="4"></textarea>
+      </div>
+      <button class="btn btn-s" type="submit" name="decisao" value="devolver">Devolver ao técnico</button>
+      <p class="peq">O motivo fica registrado e ajuda a melhorar os modelos e o checklist.</p>
+    </form>
+  </aside>
+</div>
+{% endblock %}

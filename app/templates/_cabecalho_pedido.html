@@ -1,0 +1,11 @@
+{# Título comum das telas de um pedido: protocolo, parque, assunto, responsável e prazo LAI #}
+<div class="titulo">
+  <div>
+    <a class="voltar" href="{{ voltar_url | default(url_for('rotas.painel')) }}">‹ {{ voltar_rotulo | default('Voltar ao painel') }}</a>
+    <h1>{{ pedido.protocolo }} · {{ titulo_etapa }}</h1>
+    <p class="sub">{{ pedido.parque or pedido.area }} · {{ pedido.assunto }} · responsável: {{ pedido.responsavel_rotulo }} · <a href="{{ url_for('rotas.pedido', pedido_id=pedido.id) }}">histórico</a></p>
+  </div>
+  <span class="etiqueta prazo-{{ pedido.situacao }}" style="font-size: 14px; padding: 8px 14px">
+    Prazo LAI {{ pedido.prazo | dia_mes }} · {{ pedido.dias_restantes }} dias{% if pedido.prorrogado %} · prorrogado{% endif %}
+  </span>
+</div>
